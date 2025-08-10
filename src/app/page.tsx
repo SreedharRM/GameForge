@@ -14,11 +14,14 @@ import { Button } from "@/components/ui/button";
 import { ExampleButton } from "@/components/ExampleButton";
 import { UserButton } from "@stackframe/stack";
 import { UserApps } from "@/components/user-apps";
-import { PromptInputTextareaWithTypingAnimation } from "@/components/prompt-input";
+import { useGamePromptStore } from "@/store/gamePromptStore";
+import { PromptInputTextarea } from "@/components/ui/prompt-input";
 
 const queryClient = new QueryClient();
 
 export default function Home() {
+  // Use external store for gamePrompt
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
       <div className="max-w-7xl mx-auto">
@@ -57,14 +60,13 @@ export default function Home() {
             </TabsTrigger>
           </TabsList>
 
+          {/* Use global gamePrompt state in all tabs */}
           <TabsContent value="ideation" className="mt-0">
             <IdeationScreen />
           </TabsContent>
-
           <TabsContent value="mechanics" className="mt-0">
             <GameMechanicsScreen />
           </TabsContent>
-
           <TabsContent value="editor" className="mt-0">
             <QueryClientProvider client={queryClient}>
               <CodeEditorAI />
@@ -77,7 +79,7 @@ export default function Home() {
 }
 
 function CodeEditorAI() {
-  const [prompt, setPrompt] = useState("");
+  const [gamePrompt, setGamePrompt] = useGamePromptStore();
   const [framework, setFramework] = useState("nextjs");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -85,7 +87,7 @@ function CodeEditorAI() {
   const handleSubmit = async () => {
     setIsLoading(true);
     router.push(
-      `/app/new?message=${encodeURIComponent(prompt)}&template=${framework}`
+      `/app/new?message=${encodeURIComponent(gamePrompt)}&template=${framework}`
     );
   };
 
@@ -121,18 +123,21 @@ function CodeEditorAI() {
                   />
                 }
                 isLoading={isLoading}
-                value={prompt}
-                onValueChange={setPrompt}
+                value={gamePrompt}
+                onValueChange={setGamePrompt}
                 onSubmit={handleSubmit}
                 className="relative z-10 border-none bg-transparent shadow-none"
               >
-                <PromptInputTextareaWithTypingAnimation />
+              <PromptInputTextarea
+                className="min-h-[100px] w-full bg-transparent dark:bg-transparent backdrop-blur-sm pr-12"
+                
+              />
                 <PromptInputActions>
                   <Button
                     variant={"ghost"}
                     size="sm"
                     onClick={handleSubmit}
-                    disabled={isLoading || !prompt.trim()}
+                    disabled={isLoading || !gamePrompt.trim()}
                     className="h-7 text-xs"
                   >
                     <span className="hidden sm:inline">Start Creating ⏎</span>
@@ -143,7 +148,7 @@ function CodeEditorAI() {
             </div>
           </div>
 
-          <Examples setPrompt={setPrompt} />
+          <Examples setGamePrompt={setGamePrompt} />
 
           <div className="mt-8 mb-16">
             <a
@@ -168,24 +173,24 @@ function CodeEditorAI() {
   );
 }
 
-function Examples({ setPrompt }: { setPrompt: (text: string) => void }) {
+function Examples({ setGamePrompt }: { setGamePrompt: (text: string) => void }) {
   return (
     <div className="mt-2">
       <div className="flex flex-wrap justify-center gap-2 px-2">
         <ExampleButton
           text="Dog Food Marketplace"
           promptText="Build a dog food marketplace where users can browse and purchase premium dog food."
-          onClick={(text) => setPrompt(text)}
+          onClick={(text) => setGamePrompt(text)}
         />
         <ExampleButton
           text="Personal Website"
           promptText="Create a personal website with portfolio, blog, and contact sections."
-          onClick={(text) => setPrompt(text)}
+          onClick={(text) => setGamePrompt(text)}
         />
         <ExampleButton
           text="Burrito B2B SaaS"
           promptText="Build a B2B SaaS for burrito shops to manage inventory, orders, and delivery logistics."
-          onClick={(text) => setPrompt(text)}
+          onClick={(text) => setGamePrompt(text)}
         />
       </div>
     </div>

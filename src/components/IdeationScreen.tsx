@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
+// Simulate external/global store for gamePrompt
+import { useGamePromptStore } from "@/store/gamePromptStore";
+
 interface ChatMessage {
   id: string;
   type: "user" | "assistant";
@@ -23,6 +26,9 @@ interface GameTemplate {
 }
 
 export default function IdeationScreen() {
+  // Use external store instead of props
+  const [gamePrompt, setGamePrompt] = useGamePromptStore();
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "1",
@@ -142,23 +148,16 @@ export default function IdeationScreen() {
   }
 
   const handleSaveGameIdea = () => {
+    // Updates the global gamePrompt value in the store
     const lastAssistantMsg = [...messages].reverse().find((msg) => msg.type === "assistant");
     if (!lastAssistantMsg) {
       setSaveStatus("No game idea to save.");
       return;
     }
     const gameDesign = extractGameDesign(lastAssistantMsg.content);
-    const mdContent = `# Game Idea\n\n## ${gameDesign.title}\n\n**Genre:** ${gameDesign.genre}\n\n**Description:**\n${gameDesign.description}\n\n---\n\n${gameDesign.raw || lastAssistantMsg.content}`;
-    const blob = new Blob([mdContent], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "gameidea.md";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setSaveStatus("Download started!");
+    const combinedPrompt = `Game Idea:\nTitle: ${gameDesign.title}\nGenre: ${gameDesign.genre}\nDescription: ${gameDesign.description}\n\nMechanics:\n${gamePrompt}`;
+    setGamePrompt(combinedPrompt); // global update
+    setSaveStatus("Game prompt updated!");
   };
 
   function renderGameIdeas(content: string) {
@@ -194,7 +193,7 @@ export default function IdeationScreen() {
               AI Ideation Assistant
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col h-full">
+          <CardContent className="flex flex-col" style ={{ height: "580px"}}>
             <ScrollArea className="flex-1 mb-4 pr-4">
               <div className="space-y-4">
                 {messages.map((message) => (
@@ -228,9 +227,11 @@ export default function IdeationScreen() {
                     </Avatar>
                     <div className="flex-1">
                       {renderGameIdeas(streamingMessage) || (
-                        <div className="max-w-[80%] p-3 rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-md">
-                          <p className="text-sm whitespace-pre-line">{streamingMessage}</p>
-                          <span className="text-xs opacity-70 mt-1 block">...</span>
+                        <div className="max-w-[80%] p-3 rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-md border-2 border-green-400 flex flex-col items-start">
+                          <p className="text-base font-mono leading-relaxed whitespace-pre-line break-words text-green-100">
+                            {streamingMessage}
+                          </p>
+                          <span className="text-xs opacity-80 mt-1 block animate-pulse text-green-300">AI is thinking...</span>
                         </div>
                       )}
                     </div>
@@ -238,25 +239,22 @@ export default function IdeationScreen() {
                 )}
               </div>
             </ScrollArea>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-end w-full">
               <Textarea
                 placeholder="Describe your game idea or ask for suggestions..."
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
-                className="flex-1 bg-slate-700 border border-indigo-500 text-white resize-none rounded-lg shadow-md focus:ring-2 focus:ring-indigo-400"
-                style={{ height: "36px" }}
+                className="flex-1 bg-slate-700 border border-indigo-500 text-white resize-none rounded-lg shadow-md focus:ring-2 focus:ring-indigo-400 min-h-[48px] max-h-[120px]"
+                rows={2}
                 onKeyPress={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     handleSendMessage();
                   }
                 }}
+                style={{ minHeight: 48, maxHeight: 120 }}
               />
-              <Button
-                onClick={handleSendMessage}
-                className="bg-gradient-to-r from-indigo-500 to-fuchsia-500 hover:from-indigo-600 hover:to-fuchsia-600 text-white shadow-lg rounded-lg"
-                style={{ height: "64px", width: "72px" }}
-              >
+              <Button onClick={handleSendMessage} className="bg-gradient-to-r from-indigo-500 to-fuchsia-500 hover:from-indigo-600 hover:to-fuchsia-600 text-white font-bold shadow-lg px-6 py-2 rounded-lg">
                 Send
               </Button>
             </div>
@@ -330,12 +328,15 @@ export default function IdeationScreen() {
         {/* Good to Go */}
         <div>
           <Button
-            className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white h-12 text-lg font-semibold rounded-lg shadow-xl"
+            className="w-full bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 hover:from-green-500 hover:to-purple-500 text-black h-12 text-lg font-extrabold shadow-xl border-4 border-green-400 rounded-xl"
             onClick={handleSaveGameIdea}
+            style={{ margin: 0, boxSizing: 'border-box', maxWidth: '100%' }}
           >
             Good to Go! 🚀
           </Button>
-          {saveStatus && <div className="text-center text-sm mt-2 text-slate-300">{saveStatus}</div>}
+          {saveStatus && (
+            <div className="text-center text-sm mt-2 text-green-400 font-bold drop-shadow">{saveStatus}</div>
+          )}
         </div>
       </div>
     </div>

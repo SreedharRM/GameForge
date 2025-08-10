@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useGamePromptStore } from "@/store/gamePromptStore";
 
 interface KeyBinding {
   id: string;
@@ -16,6 +17,8 @@ interface KeyBinding {
 }
 
 export default function GameMechanicsScreen() {
+  // Use external store for gamePrompt
+  const [gamePrompt, setGamePrompt] = useGamePromptStore();
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [gesturesEnabled, setGesturesEnabled] = useState(false);
   const [editingKeyBinding, setEditingKeyBinding] = useState<string | null>(null);
@@ -45,7 +48,7 @@ export default function GameMechanicsScreen() {
   };
 
   const resetToDefaults = () => {
-    setKeyBindings([
+  setKeyBindings([
       { id: "1", action: "Move Forward", key: "W", description: "Move character forward" },
       { id: "2", action: "Move Backward", key: "S", description: "Move character backward" },
       { id: "3", action: "Move Left", key: "A", description: "Move character left" },
@@ -234,6 +237,25 @@ export default function GameMechanicsScreen() {
           </div>
         </CardContent>
       </Card>
+      {/* Add a button to push mechanics data to global gamePrompt */}
+      <div className="mt-6">
+        <Button
+          className="w-full bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 hover:from-green-500 hover:to-purple-500 text-black h-12 text-lg font-semibold"
+          onClick={() => {
+            // Try to extract the game idea from the current gamePrompt
+            let gameIdeaSection = "";
+            const gameIdeaMatch = gamePrompt.match(/Game Idea:[\s\S]*?(?=\nMechanics:|$)/);
+            if (gameIdeaMatch) {
+              gameIdeaSection = gameIdeaMatch[0].trim();
+            }
+            const mechanicsText = keyBindings.map(k => `${k.action}: ${k.key} (${k.description})`).join("\n");
+            const combinedPrompt = `${gameIdeaSection}\n\nMechanics:\n${mechanicsText}`;
+            setGamePrompt(combinedPrompt);
+          }}
+        >
+          Add Mechanics to Game Prompt
+        </Button>
+      </div>
     </div>
   );
 }
